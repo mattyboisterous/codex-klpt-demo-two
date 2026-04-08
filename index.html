@@ -18,7 +18,7 @@
         <p class="eyebrow">Child progress</p>
         <h1 id="page-title">KLPT tool</h1>
         <p class="intro">
-          Select a domain to zoom into its subdomains and elements. Use the progress tracker to move back up.
+          Select an avatar, then choose domains, subdomains and elements from one guided screen.
         </p>
       </section>
 
@@ -69,12 +69,11 @@
         </nav>
 
         <div class="stage" aria-live="polite">
-          <div class="orbit" data-state="ready"></div>
+          <section class="selection-board" aria-label="Select domains, subdomains and elements"></section>
           <section class="behaviour-screen" aria-label="Select a behaviour" hidden>
-            <article class="behaviour-detail" role="button" tabindex="0" aria-label="Select this behaviour and continue">
+            <article class="behaviour-detail" aria-live="polite">
               <h2></h2>
               <div class="behaviour-detail__description"></div>
-              <span class="behaviour-detail__cta">Tap to select and continue</span>
             </article>
             <div class="behaviour-orbit"></div>
           </section>
@@ -88,14 +87,6 @@
         </div>
       </section>
     </main>
-
-    <template id="node-button-template">
-      <button class="node-button" type="button">
-        <span class="node-button__index"></span>
-        <span class="node-button__name"></span>
-        <span class="node-button__hint"></span>
-      </button>
-    </template>
 
     <script src="src/app.js" defer></script>
     <script>

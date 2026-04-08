@@ -14,7 +14,7 @@ const storageDialogContent = document.querySelector(".storage-dialog__content");
 const sessionList = document.querySelector(".session-list");
 const avatarGrid = document.querySelector(".avatar-grid");
 const activeSession = document.querySelector(".active-session");
-const orbit = document.querySelector(".orbit");
+const selectionBoard = document.querySelector(".selection-board");
 const progressTrack = document.querySelector(".progress-track");
 const selectionCard = document.querySelector(".selection-card");
 const behaviourScreen = document.querySelector(".behaviour-screen");
@@ -22,7 +22,6 @@ const behaviourDetail = document.querySelector(".behaviour-detail");
 const behaviourOrbit = document.querySelector(".behaviour-orbit");
 const statementScreen = document.querySelector(".statement-screen");
 const reviewScreen = document.querySelector(".review-screen");
-const template = document.querySelector("#node-button-template");
 
 let rootNodes = [];
 let avatars = [];
@@ -31,7 +30,7 @@ let sessions = [];
 let activeSessionId = null;
 let path = [];
 let activeElement = null;
-let activePage = "domains";
+let activePage = "selection";
 
 async function init() {
   try {
@@ -91,7 +90,7 @@ function bindEvents() {
     activeSessionId = null;
     path = [];
     activeElement = null;
-    activePage = "domains";
+    activePage = "selection";
     renderHome();
     showView("home");
   });
@@ -263,7 +262,7 @@ function resumeSession(sessionId) {
   } else if (resumedElement) {
     renderBehaviourScreen(resumedElement, selectedBehaviourId(resumedElement));
   } else {
-    renderLevel(currentChildren(), currentLabel());
+    renderSelectionScreen();
   }
 
   showView("explorer");
@@ -277,7 +276,7 @@ function deleteSession(sessionId) {
     activeSessionId = null;
     path = [];
     activeElement = null;
-    activePage = "domains";
+    activePage = "selection";
   }
 
   renderHome();
@@ -327,159 +326,402 @@ function normaliseNodes(nodes, type, parentPath) {
 
 function colorForPath(nodePath) {
   const [domainIndex = 0, subIndex = 0, elementIndex = 0] = nodePath;
-  const hue = (domainIndex * 72 + subIndex * 22 + elementIndex * 9 + 204) % 360;
-  const saturation = Math.max(62, 82 - nodePath.length * 4);
-  const lightness = Math.min(62, 48 + nodePath.length * 4);
+  const palette = [
+    { hue: 209, saturation: 70, lightness: 34 },
+    { hue: 24, saturation: 78, lightness: 36 },
+    { hue: 198, saturation: 66, lightness: 36 },
+    { hue: 18, saturation: 72, lightness: 34 }
+  ][domainIndex % 4];
+  const hue = (palette.hue + subIndex * 8 - elementIndex * 4 + 360) % 360;
+  const saturation = Math.max(58, palette.saturation - nodePath.length * 3);
+  const lightness = Math.min(48, palette.lightness + nodePath.length * 4);
 
   return {
     accent: `hsl(${hue} ${saturation}% ${lightness}%)`,
-    glow: `hsl(${hue} ${saturation}% 74%)`
+    glow: `hsl(${hue} ${Math.max(52, saturation - 8)}% ${Math.min(56, lightness + 12)}%)`
   };
 }
 
-function renderLevel(nodes, label) {
+function renderSelectionScreen() {
+  const session = currentSession();
+  const domain = selectedDomain();
+  const subDomains = domain?.children?.filter((node) => node.type === "subdomain") ?? [];
+  const subDomain = selectedSubDomain();
+  const elements = elementOptions();
+  const selectedElementIds = new Set(session?.elements?.map((element) => element.id) ?? []);
+
   selectionCard.hidden = true;
   behaviourScreen.hidden = true;
   statementScreen.hidden = true;
   reviewScreen.hidden = true;
-  orbit.hidden = false;
+  selectionBoard.hidden = false;
   activeElement = null;
-  activePage = stepIdForNodes(nodes);
-  orbit.dataset.count = nodes.length;
-  orbit.dataset.state = "leaving";
+  activePage = "selection";
+  renderProgressNav();
 
-  window.setTimeout(() => {
-    orbit.replaceChildren(...nodes.map((node, index) => createNodeButton(node, index, nodes.length)));
-    orbit.dataset.state = "entering";
-    orbit.setAttribute("aria-label", label);
-
-    window.setTimeout(() => {
-      orbit.dataset.state = "ready";
-    }, 420);
-  }, 180);
+  selectionBoard.replaceChildren(
+    createSelectionIntro(session, domain, subDomain),
+    createSelectionRow("Domains", "Choose one broad area of learning and development.", rootNodes, domain?.id ?? null, selectDomain),
+    createSelectionRow(
+      "Subdomains",
+      subDomains.length ? "Choose a more specific focus area." : "This domain goes straight to elements.",
+      subDomains,
+      subDomain?.id ?? null,
+      selectSubDomain,
+      "Select a domain with subdomains to use this row."
+    ),
+    createSelectionRow(
+      "Elements",
+      "Toggle one or more observable learning elements.",
+      elements,
+      selectedElementIds,
+      toggleElement,
+      domain ? "Select a subdomain first to reveal its elements." : "Select a domain first to reveal elements.",
+      true
+    ),
+    createSelectionActions(session)
+  );
 }
 
-function createNodeButton(node, index, total) {
-  const button = template.content.firstElementChild.cloneNode(true);
-  const angle = angleForPosition(index, total);
-  const radius = total <= 1 ? 0 : clamp(128, 18 * total + 132, 260);
+function createSelectionIntro(session, domain, subDomain) {
+  const selectedCount = session?.elements?.length ?? 0;
+  const panel = document.createElement("article");
+  panel.className = "selection-intro";
+  panel.innerHTML = `
+    <div>
+      <p class="eyebrow">Learning selection</p>
+      <h2>Choose the focus for this observation</h2>
+    </div>
+    <p>${selectionSummaryText(domain, subDomain, selectedCount)}</p>
+  `;
 
-  button.style.setProperty("--angle", `${angle}deg`);
-  button.style.setProperty("--radius", `${radius}px`);
+  return panel;
+}
+
+function createSelectionRow(title, hint, nodes, selected, onSelect, emptyCopy, allowMultiple = false) {
+  const row = document.createElement("section");
+  row.className = "selection-row";
+  row.setAttribute("aria-label", title);
+  row.innerHTML = `
+    <div class="selection-row__heading">
+      <h3>${title}</h3>
+      <p>${hint}</p>
+    </div>
+  `;
+
+  const scroller = document.createElement("div");
+  scroller.className = "selection-row__scroller";
+
+  if (!nodes.length) {
+    scroller.innerHTML = `<p class="selection-row__empty">${emptyCopy}</p>`;
+  } else {
+    scroller.replaceChildren(...nodes.map((node) => {
+      const isSelected = allowMultiple ? selected.has(node.id) : selected === node.id;
+      return createSelectionPanel(node, isSelected, allowMultiple, onSelect);
+    }));
+  }
+
+  row.append(scroller);
+  return row;
+}
+
+function createSelectionPanel(node, isSelected, allowMultiple, onSelect) {
+  const button = document.createElement("button");
+  button.className = "selection-panel";
+  button.type = "button";
   button.style.setProperty("--accent", node.color.accent);
   button.style.setProperty("--accent-glow", node.color.glow);
-  button.style.setProperty("--delay", `${index * 70}ms`);
   button.dataset.type = node.type;
   button.dataset.nodeId = node.id;
-  button.querySelector(".node-button__index").textContent = String(node.index).padStart(2, "0");
-  button.querySelector(".node-button__name").textContent = node.name;
-  button.querySelector(".node-button__hint").textContent = node.children.length
-    ? `${node.children.length} ${node.children.length === 1 ? "item" : "items"}`
-    : "Select";
-  button.addEventListener("click", () => selectNode(node));
+  button.dataset.selected = String(isSelected);
+  button.setAttribute("aria-pressed", String(isSelected));
+  button.innerHTML = `
+    <span class="selection-panel__index">${String(node.index).padStart(2, "0")}</span>
+    <strong>${escapeHtml(node.name)}</strong>
+    <small>${panelHint(node, allowMultiple, isSelected)}</small>
+  `;
+  button.addEventListener("click", () => onSelect(node));
 
   return button;
 }
 
-function angleForPosition(index, total) {
-  if (total <= 1) {
-    return 0;
-  }
+function createSelectionActions(session) {
+  const actions = document.createElement("div");
+  actions.className = "page-actions selection-actions";
 
-  if (total === 2) {
-    return index === 0 ? 180 : 0;
-  }
+  const previous = document.createElement("button");
+  previous.className = "secondary-button";
+  previous.type = "button";
+  previous.textContent = "Previous";
+  previous.addEventListener("click", () => {
+    renderAvatarPicker();
+    showView("avatars");
+  });
 
-  return (360 / total) * index - 90;
+  const next = document.createElement("button");
+  next.className = "primary-button";
+  next.type = "button";
+  next.textContent = "Next";
+  next.disabled = !session?.elements?.length;
+  next.addEventListener("click", () => {
+    const element = lastSelectedElement(session);
+
+    if (!element) {
+      return;
+    }
+
+    path = pathForNode(element);
+    persistSelection(element, selectedBehaviourId(element), "behaviours");
+    renderBehaviourScreen(element, selectedBehaviourId(element));
+    renderProgressNav(element);
+    renderActiveSession();
+  });
+
+  actions.append(previous, next);
+  return actions;
 }
 
-function selectNode(node) {
-  if (!node.children.length) {
-    activeElement = node;
-    activePage = "behaviours";
-    renderProgressNav(node);
-    renderBehaviourScreen(node, selectedBehaviourId(node));
-    persistSelection(node, selectedBehaviourId(node));
-    renderActiveSession();
-    return;
+function selectionSummaryText(domain, subDomain, selectedCount) {
+  if (!domain) {
+    return "Start with a domain, then slide each row sideways if more panels are available.";
   }
 
-  path = [...path, node];
+  const subDomainText = subDomain ? `, ${subDomain.name}` : "";
+  const elementText = selectedCount === 1 ? "1 element selected" : `${selectedCount} elements selected`;
+  return `${escapeHtml(domain.name)}${escapeHtml(subDomainText)}: ${elementText}.`;
+}
+
+function panelHint(node, allowMultiple, isSelected) {
+  if (allowMultiple) {
+    return isSelected ? "Selected" : "Tap to add";
+  }
+
+  if (node.children.length) {
+    return `${node.children.length} ${node.children.length === 1 ? "item" : "items"}`;
+  }
+
+  return isSelected ? "Selected" : "Tap to select";
+}
+
+function selectDomain(domain) {
+  path = [domain];
   activeElement = null;
-  activePage = "domains";
+  clearSelectedElements();
   persistSelection();
-  renderProgressNav();
-  renderLevel(node.children, node.name);
+  renderSelectionScreen();
   renderActiveSession();
 }
 
-function renderBehaviourScreen(elementNode, requestedBehaviourId = null) {
-  const isCompact = window.matchMedia("(max-width: 560px)").matches;
-  const behaviours = elementNode.behaviours?.length ? elementNode.behaviours : [fallbackBehaviour(elementNode)];
-  const selectedBehaviour = behaviours.find((behaviour) => behaviour.id === requestedBehaviourId) ?? behaviours[0];
+function selectSubDomain(subDomain) {
+  path = [selectedDomain(), subDomain].filter(Boolean);
+  activeElement = null;
+  clearSelectedElements();
+  persistSelection();
+  renderSelectionScreen();
+  renderActiveSession();
+}
 
-  activeElement = elementNode;
+function toggleElement(elementNode) {
+  const session = currentSession();
+
+  if (!session) {
+    return;
+  }
+
+  path = pathForNode(elementNode);
+  activeElement = null;
+
+  if (session.elements.some((element) => element.id === elementNode.id)) {
+    session.elements = session.elements.filter((element) => element.id !== elementNode.id);
+    persistSelection();
+  } else {
+    persistSelection(elementNode, selectedBehaviourId(elementNode), "selection");
+  }
+
+  renderSelectionScreen();
+  renderActiveSession();
+}
+
+function selectedDomain() {
+  return path.find((node) => node?.type === "domain") ?? null;
+}
+
+function selectedSubDomain() {
+  return path.find((node) => node?.type === "subdomain") ?? null;
+}
+
+function elementOptions() {
+  const domain = selectedDomain();
+
+  if (!domain) {
+    return [];
+  }
+
+  const subDomains = domain.children.filter((node) => node.type === "subdomain");
+
+  if (!subDomains.length) {
+    return domain.children.filter((node) => node.type === "element");
+  }
+
+  return selectedSubDomain()?.children?.filter((node) => node.type === "element") ?? [];
+}
+
+function clearSelectedElements() {
+  const session = currentSession();
+
+  if (session) {
+    session.elements = [];
+  }
+}
+
+function renderBehaviourScreen(elementNode = null, requestedBehaviourId = null) {
+  const session = currentSession();
+  const elements = selectedElementNodes(session);
+  const focusedElement = elementNode ?? elements.at(-1);
+
+  if (!session || !focusedElement) {
+    renderSelectionScreen();
+    return;
+  }
+
+  const behaviours = behavioursForElement(focusedElement);
+  const selectedBehaviour = behaviours.find((behaviour) => behaviour.id === requestedBehaviourId) ??
+    behaviours.find((behaviour) => behaviour.id === selectedBehaviourId(focusedElement)) ??
+    behaviours[0];
+
+  activeElement = focusedElement;
   activePage = "behaviours";
-  orbit.hidden = true;
+  selectionBoard.hidden = true;
   selectionCard.hidden = true;
   behaviourScreen.hidden = false;
   statementScreen.hidden = true;
   reviewScreen.hidden = true;
-  behaviourScreen.style.setProperty("--accent", elementNode.color.accent);
+  behaviourScreen.style.setProperty("--accent", focusedElement.color.accent);
+  behaviourScreen.style.setProperty("--accent-glow", focusedElement.color.glow);
   behaviourDetail.dataset.behaviourId = selectedBehaviour.id;
+  behaviourDetail.dataset.elementId = focusedElement.id;
   behaviourDetail.querySelector("h2").textContent = selectedBehaviour.name;
   behaviourDetail.querySelector(".behaviour-detail__description").innerHTML = selectedBehaviour.description;
-  behaviourOrbit.replaceChildren(...behaviours.map((behaviour, index) => {
-    return createBehaviourButton(elementNode, behaviour, index, behaviours.length, behaviour.id === selectedBehaviour.id);
-  }));
-  behaviourDetail.onclick = () => {
-    persistSelection(elementNode, selectedBehaviour.id, "statement");
-    renderStatementScreen();
-  };
-  behaviourDetail.onkeydown = (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      persistSelection(elementNode, selectedBehaviour.id, "statement");
-      renderStatementScreen();
-    }
-  };
+  behaviourOrbit.replaceChildren(
+    createBehaviourIntro(elements.length),
+    ...elements.map((selectedElement) => createBehaviourRow(selectedElement, focusedElement.id, selectedBehaviour.id)),
+    behaviourDetail,
+    createBehaviourActions(focusedElement, selectedBehaviour.id)
+  );
 
   behaviourScreen.animate(
-    isCompact
-      ? [
-          { opacity: 0, transform: "translateY(18px) scale(0.96)" },
-          { opacity: 1, transform: "translateY(0) scale(1)" }
-        ]
-      : [
-          { opacity: 0, transform: "scale(0.9)" },
-          { opacity: 1, transform: "scale(1)" }
-        ],
-    { duration: 420, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" }
+    [
+      { opacity: 0.92, transform: "translateY(4px)" },
+      { opacity: 1, transform: "translateY(0)" }
+    ],
+    { duration: 180, easing: "ease-out", fill: "forwards" }
   );
 }
 
-function createBehaviourButton(elementNode, behaviour, index, total, isSelected) {
+function createBehaviourIntro(elementCount) {
+  const intro = document.createElement("article");
+  intro.className = "behaviour-intro";
+  intro.innerHTML = `
+    <div>
+      <p class="eyebrow">Behaviour selection</p>
+      <h2>Choose a behaviour for each selected element</h2>
+    </div>
+    <p>${elementCount === 1 ? "1 element selected" : `${elementCount} elements selected`}. Tap a behaviour to update the detail panel.</p>
+  `;
+
+  return intro;
+}
+
+function createBehaviourRow(elementNode, focusedElementId, focusedBehaviourId) {
+  const row = document.createElement("section");
+  row.className = "behaviour-row";
+  row.style.setProperty("--accent", elementNode.color.accent);
+  row.style.setProperty("--accent-glow", elementNode.color.glow);
+  row.setAttribute("aria-label", `${elementNode.name} behaviours`);
+
+  const behaviours = behavioursForElement(elementNode);
+  const selectedId = selectedBehaviourId(elementNode);
+  const isFocusedElement = elementNode.id === focusedElementId;
+
+  row.innerHTML = `
+    <div class="behaviour-row__element">
+      <span>${String(elementNode.index).padStart(2, "0")}</span>
+      <strong>${escapeHtml(elementNode.name)}</strong>
+      <small>${isFocusedElement ? "Showing details" : "Selected element"}</small>
+    </div>
+    <div class="behaviour-row__divider" aria-hidden="true"></div>
+  `;
+
+  const scroller = document.createElement("div");
+  scroller.className = "behaviour-row__scroller";
+  scroller.replaceChildren(...behaviours.map((behaviour, index) => {
+    return createBehaviourButton(
+      elementNode,
+      behaviour,
+      index,
+      behaviours.length,
+      selectedId === behaviour.id,
+      isFocusedElement && focusedBehaviourId === behaviour.id
+    );
+  }));
+
+  row.append(scroller);
+  return row;
+}
+
+function createBehaviourActions(focusedElement, focusedBehaviourId) {
+  const actions = document.createElement("div");
+  actions.className = "page-actions behaviour-actions";
+
+  const previous = document.createElement("button");
+  previous.className = "secondary-button";
+  previous.type = "button";
+  previous.textContent = "Previous";
+  previous.addEventListener("click", () => renderSelectionScreen());
+
+  const next = document.createElement("button");
+  next.className = "primary-button";
+  next.type = "button";
+  next.textContent = "Next";
+  next.addEventListener("click", () => {
+    persistSelection(focusedElement, focusedBehaviourId, "statement");
+    renderStatementScreen();
+  });
+
+  actions.append(previous, next);
+  return actions;
+}
+
+function behavioursForElement(elementNode) {
+  return elementNode.behaviours?.length ? elementNode.behaviours : [fallbackBehaviour(elementNode)];
+}
+
+function selectedElementNodes(session) {
+  return session?.elements
+    ?.map((element) => findNodeById(rootNodes, element.id))
+    .filter(Boolean) ?? [];
+}
+
+function createBehaviourButton(elementNode, behaviour, index, total, isSelected, isFocused) {
   const button = document.createElement("button");
-  const angle = total <= 1 ? -90 : -180 + (180 / (total - 1)) * index;
-  const radius = clamp(300, 24 * total + 210, 320);
   const shadeProgress = total <= 1 ? 0 : index / (total - 1);
-  const lightMix = `${Math.round(48 + shadeProgress * 44)}%`;
-  const darkMix = `${Math.round(62 + shadeProgress * 35)}%`;
+  const lightMix = `${Math.round(38 + shadeProgress * 50)}%`;
+  const darkMix = `${Math.round(58 + shadeProgress * 32)}%`;
 
   button.className = "behaviour-button";
   button.type = "button";
-  button.style.setProperty("--angle", `${angle}deg`);
-  button.style.setProperty("--radius", `${radius}px`);
-  button.style.setProperty("--delay", `${index * 55}ms`);
   button.style.setProperty("--mix-light", lightMix);
   button.style.setProperty("--mix-dark", darkMix);
   button.dataset.selected = String(isSelected);
+  button.dataset.focused = String(isFocused);
+  button.setAttribute("aria-pressed", String(isSelected));
   button.innerHTML = `
     <span>${String(behaviour.index).padStart(2, "0")}</span>
     <strong>${behaviour.name}</strong>
   `;
   button.addEventListener("click", () => {
-    persistSelection(elementNode, behaviour.id);
+    path = pathForNode(elementNode);
+    persistSelection(elementNode, behaviour.id, "behaviours");
     renderBehaviourScreen(elementNode, behaviour.id);
     renderProgressNav(elementNode);
     renderActiveSession();
@@ -513,12 +755,10 @@ function createProgressStep(step, index, state) {
 
 function progressStateForStep(stepId, elementNode) {
   const session = currentSession();
-  const hasDomain = Boolean(session?.domain);
-  const hasSubDomain = Boolean(session?.subDomain);
-  const hasElement = Boolean(elementNode ?? session?.elements?.length);
+  const hasSelection = Boolean(session?.domain && session?.elements?.length);
   const hasBehaviour = Boolean(session?.elements?.some((element) => element.behaviour));
-  const hasStatement = Boolean(session?.pageIndex >= 4 || hasFormContent(session));
-  const hasReview = Boolean(session?.pageIndex >= 5);
+  const hasStatement = Boolean(session?.pageIndex >= 2 || hasFormContent(session));
+  const hasReview = Boolean(session?.pageIndex >= 3);
   const currentStep = currentStepId(elementNode);
 
   if (stepId === currentStep) {
@@ -526,9 +766,7 @@ function progressStateForStep(stepId, elementNode) {
   }
 
   if (
-    (stepId === "domains" && hasDomain) ||
-    (stepId === "subdomains" && hasSubDomain) ||
-    (stepId === "elements" && hasElement) ||
+    (stepId === "selection" && hasSelection) ||
     (stepId === "behaviours" && hasBehaviour) ||
     (stepId === "statement" && hasStatement) ||
     (stepId === "review" && hasReview)
@@ -552,44 +790,12 @@ function currentStepId(elementNode) {
     return "behaviours";
   }
 
-  const children = currentChildren();
-
-  if (children.some((node) => node.type === "element")) {
-    return "elements";
-  }
-
-  if (children.some((node) => node.type === "subdomain")) {
-    return "subdomains";
-  }
-
-  return "domains";
-}
-
-function stepIdForNodes(nodes) {
-  if (nodes.some((node) => node.type === "element")) {
-    return "elements";
-  }
-
-  if (nodes.some((node) => node.type === "subdomain")) {
-    return "subdomains";
-  }
-
-  return "domains";
+  return "selection";
 }
 
 function navigateToStep(stepId) {
-  if (stepId === "domains") {
-    goToDepth(0);
-    return;
-  }
-
-  if (stepId === "subdomains" && path[0]?.children?.some((node) => node.type === "subdomain")) {
-    goToDepth(1);
-    return;
-  }
-
-  if (stepId === "elements") {
-    goToDepth(elementDepth());
+  if (stepId === "selection") {
+    renderSelectionScreen();
     return;
   }
 
@@ -614,37 +820,22 @@ function navigateToStep(stepId) {
   }
 }
 
-function elementDepth() {
-  const subDomainIndex = path.findIndex((node) => node.type === "subdomain");
-  return subDomainIndex >= 0 ? subDomainIndex + 1 : Math.min(path.length, 1);
-}
-
-function goToDepth(depth) {
-  path = path.slice(0, depth);
-  activeElement = null;
-  activePage = stepIdForNodes(currentChildren());
-  persistSelection();
-  renderProgressNav();
-  renderLevel(currentChildren(), currentLabel());
-  renderActiveSession();
-}
-
 function renderStatementScreen() {
-  const context = selectedContext();
+  const context = selectedStatementContext();
 
   if (!context) {
     return;
   }
 
-  activeElement = context.element;
+  activeElement = context.activeElement;
   activePage = "statement";
-  orbit.hidden = true;
+  selectionBoard.hidden = true;
   behaviourScreen.hidden = true;
   selectionCard.hidden = true;
   reviewScreen.hidden = true;
   statementScreen.hidden = false;
-  persistSelection(context.element, context.behaviour.id, "statement");
-  renderProgressNav(context.element);
+  persistPage("statement");
+  renderProgressNav(context.activeElement);
   renderActiveSession();
 
   statementScreen.innerHTML = `
@@ -664,16 +855,7 @@ function renderStatementScreen() {
 
       ${fieldMarkup("observational-context", "Description of observation context or evidence collected", "textarea")}
 
-      <section class="evidence-grid">
-        <div class="evidence-panel">
-          <h3>What you observed</h3>
-          ${context.behaviour.description}
-        </div>
-        <div class="evidence-panel">
-          <h3>What is likely to be the next step in learning progression</h3>
-          ${context.nextBehaviour?.description ?? "<p>This is the final behaviour currently available for this element.</p>"}
-        </div>
-      </section>
+      ${progressionStackMarkup(context.items)}
 
       ${fieldMarkup("professional-reflection", "Professional reflection (learning and development area links, theoretical links, educator's principles and practices)", "textarea")}
       ${fieldMarkup("support-learning", "How can you support this learning", "textarea")}
@@ -687,28 +869,28 @@ function renderStatementScreen() {
 
   bindFormAutosave(statementScreen);
   statementScreen.querySelector("[data-action='previous-behaviour']").addEventListener("click", () => {
-    renderBehaviourScreen(context.element, context.behaviour.id);
-    renderProgressNav(context.element);
+    renderBehaviourScreen(context.activeElement, selectedBehaviourId(context.activeElement));
+    renderProgressNav(context.activeElement);
   });
   statementScreen.querySelector("[data-action='next-review']").addEventListener("click", () => renderReviewScreen());
 }
 
 function renderReviewScreen() {
-  const context = selectedContext();
+  const context = selectedStatementContext();
 
   if (!context) {
     return;
   }
 
-  activeElement = context.element;
+  activeElement = context.activeElement;
   activePage = "review";
-  orbit.hidden = true;
+  selectionBoard.hidden = true;
   behaviourScreen.hidden = true;
   selectionCard.hidden = true;
   statementScreen.hidden = true;
   reviewScreen.hidden = false;
-  persistSelection(context.element, context.behaviour.id, "review");
-  renderProgressNav(context.element);
+  persistPage("review");
+  renderProgressNav(context.activeElement);
   renderActiveSession();
 
   reviewScreen.innerHTML = `
@@ -720,7 +902,7 @@ function renderReviewScreen() {
 
       <dl class="review-list">
         <div><dt>Domain</dt><dd>${escapeHtml(context.domain.name)}</dd></div>
-        <div><dt>Element</dt><dd>${escapeHtml(context.element.name)}</dd></div>
+        <div><dt>Elements</dt><dd>${context.items.length}</dd></div>
         <div><dt>Date</dt><dd>${escapeHtml(formValue("date") || "Not entered")}</dd></div>
         <div><dt>Observer</dt><dd>${escapeHtml(formValue("observer-name") || "Not entered")}</dd></div>
       </dl>
@@ -730,16 +912,7 @@ function renderReviewScreen() {
         <p>${escapeHtml(context.domain.summary ?? "Summary to be added.")}</p>
       </section>
 
-      <section class="evidence-grid">
-        <div class="evidence-panel">
-          <h3>What you observed</h3>
-          ${context.behaviour.description}
-        </div>
-        <div class="evidence-panel">
-          <h3>Next step in learning progression</h3>
-          ${context.nextBehaviour?.description ?? "<p>This is the final behaviour currently available for this element.</p>"}
-        </div>
-      </section>
+      ${progressionStackMarkup(context.items)}
 
       ${reviewTextBlock("Description of observation context or evidence collected", "observational-context")}
       ${reviewTextBlock("Professional reflection", "professional-reflection")}
@@ -786,6 +959,33 @@ function reviewTextBlock(label, name) {
   `;
 }
 
+function progressionStackMarkup(items) {
+  return `
+    <section class="progression-stack" aria-label="Selected behaviours and next behaviours">
+      ${items.map((item) => `
+        <article class="progression-item" style="--accent: ${item.element.color.accent}">
+          <div class="progression-item__heading">
+            <span>${String(item.element.index).padStart(2, "0")}</span>
+            <h3>${escapeHtml(item.element.name)}</h3>
+          </div>
+          <div class="evidence-grid">
+            <div class="evidence-panel">
+              <h3>What you observed</h3>
+              <p class="behaviour-name">${escapeHtml(item.behaviour.name)}</p>
+              ${item.behaviour.description}
+            </div>
+            <div class="evidence-panel">
+              <h3>What is likely to be the next step in learning progression</h3>
+              <p class="behaviour-name">${escapeHtml(item.nextBehaviour?.name ?? "Final behaviour")}</p>
+              ${item.nextBehaviour?.description ?? "<p>This is the final behaviour currently available for this element.</p>"}
+            </div>
+          </div>
+        </article>
+      `).join("")}
+    </section>
+  `;
+}
+
 function bindFormAutosave(container) {
   container.querySelectorAll("input[name], textarea[name]").forEach((field) => {
     field.addEventListener("input", () => updateFormField(field.name, field.value));
@@ -820,7 +1020,7 @@ function persistSelection(elementNode = null, behaviourId = null, nextPage = nul
   }
 
   session.updated = new Date().toISOString();
-  session.pageIndex = pageIndexFor(nextPage ?? (elementNode ? "behaviours" : currentStepId(null)));
+  session.pageIndex = pageIndexFor(nextPage ?? (elementNode ? "behaviours" : "selection"));
   session.domain = path.find((node) => node.type === "domain")?.id ?? null;
   session.subDomain = path.find((node) => node.type === "subdomain")?.id ?? null;
 
@@ -832,12 +1032,23 @@ function persistSelection(elementNode = null, behaviourId = null, nextPage = nul
       behaviour: behaviourId ?? existingElement?.behaviour ?? fallbackId
     };
 
-    session.elements = [
-      ...session.elements.filter((element) => element.id !== elementNode.id),
-      nextElement
-    ];
+    session.elements = existingElement
+      ? session.elements.map((element) => element.id === elementNode.id ? nextElement : element)
+      : [...session.elements, nextElement];
   }
 
+  saveSessions();
+}
+
+function persistPage(nextPage) {
+  const session = currentSession();
+
+  if (!session) {
+    return;
+  }
+
+  session.updated = new Date().toISOString();
+  session.pageIndex = pageIndexFor(nextPage);
   saveSessions();
 }
 
@@ -858,14 +1069,6 @@ function pathFromSession(session) {
 
   const subDomain = domain.children.find((node) => node.id === session.subDomain);
   return subDomain ? [domain, subDomain] : [domain];
-}
-
-function currentChildren() {
-  return path.at(-1)?.children ?? rootNodes;
-}
-
-function currentLabel() {
-  return path.at(-1)?.name ?? "Domains";
 }
 
 function fallbackBehaviour(elementNode) {
@@ -893,7 +1096,7 @@ function lastSelectedElement(session) {
 }
 
 function shouldResumeElement(session) {
-  return Boolean(session?.pageIndex && session.pageIndex > path.length && session.elements?.length);
+  return Boolean(session?.pageIndex && session.pageIndex > 0 && session.elements?.length);
 }
 
 function findNodeById(nodes, nodeId) {
@@ -930,37 +1133,44 @@ function pathForNode(node) {
   return nodePath;
 }
 
-function selectedContext() {
+function selectedStatementContext() {
   const session = currentSession();
-  const element = activeElement ?? lastSelectedElement(session);
+  const items = selectedElementNodes(session).map((element) => {
+    const elementPath = pathForNode(element);
+    const behaviours = behavioursForElement(element);
+    const behaviour = behaviours.find((item) => item.id === selectedBehaviourId(element)) ?? behaviours[0];
+    const nextBehaviour = behaviours.find((item) => item.index === behaviour.index + 1) ?? null;
 
-  if (!session || !element) {
+    return {
+      domain: elementPath.find((node) => node.type === "domain") ?? rootNodes.find((node) => node.path[0] === element.path[0]),
+      subDomain: elementPath.find((node) => node.type === "subdomain") ?? null,
+      element,
+      behaviours,
+      behaviour,
+      nextBehaviour
+    };
+  });
+  const activeStatementElement = activeElement ?? items.at(-1)?.element ?? null;
+
+  if (!session || !items.length || !activeStatementElement) {
     return null;
   }
 
-  path = pathForNode(element);
-  const domain = path.find((node) => node.type === "domain") ?? rootNodes.find((node) => node.path[0] === element.path[0]);
-  const subDomain = path.find((node) => node.type === "subdomain") ?? null;
-  const behaviours = element.behaviours?.length ? element.behaviours : [fallbackBehaviour(element)];
-  const behaviour = behaviours.find((item) => item.id === selectedBehaviourId(element)) ?? behaviours[0];
-  const nextBehaviour = behaviours.find((item) => item.index === behaviour.index + 1) ?? null;
+  path = pathForNode(activeStatementElement);
 
   return {
-    domain,
-    subDomain,
-    element,
-    behaviours,
-    behaviour,
-    nextBehaviour
+    domain: items[0].domain,
+    activeElement: activeStatementElement,
+    items
   };
 }
 
 function pageForSession(session, resumedElement) {
-  if (session?.pageIndex >= 5) {
+  if (session?.pageIndex >= 3) {
     return "review";
   }
 
-  if (session?.pageIndex >= 4) {
+  if (session?.pageIndex >= 2) {
     return "statement";
   }
 
@@ -968,17 +1178,15 @@ function pageForSession(session, resumedElement) {
     return "behaviours";
   }
 
-  return stepIdForNodes(currentChildren());
+  return "selection";
 }
 
 function pageIndexFor(stepId) {
   const indexes = {
-    domains: 0,
-    subdomains: 1,
-    elements: 2,
-    behaviours: 3,
-    statement: 4,
-    review: 5
+    selection: 0,
+    behaviours: 1,
+    statement: 2,
+    review: 3
   };
 
   return indexes[stepId] ?? 0;
@@ -1021,11 +1229,11 @@ function avatarLabel(avatar) {
 }
 
 function sessionSummary(session) {
-  if (session.pageIndex >= 5) {
+  if (session.pageIndex >= 3) {
     return "Resume review";
   }
 
-  if (session.pageIndex >= 4) {
+  if (session.pageIndex >= 2) {
     return "Resume statement";
   }
 
@@ -1033,15 +1241,11 @@ function sessionSummary(session) {
     return "Resume behaviour selection";
   }
 
-  if (session.subDomain) {
-    return "Resume subdomain";
+  if (session.elements?.length) {
+    return "Resume element selection";
   }
 
-  if (session.domain) {
-    return "Resume domain";
-  }
-
-  return "Start exploring";
+  return session.domain ? "Resume learning selection" : "Start exploring";
 }
 
 function isExpired(session) {

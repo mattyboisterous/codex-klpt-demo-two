@@ -1,19 +1,9 @@
 {
   "steps": [
     {
-      "id": "domains",
-      "title": "Domains",
-      "description": "Choose the broad area of learning and development."
-    },
-    {
-      "id": "subdomains",
-      "title": "Subdomains",
-      "description": "Choose a more specific focus area when the domain has one."
-    },
-    {
-      "id": "elements",
-      "title": "Elements",
-      "description": "Choose the observable learning element."
+      "id": "selection",
+      "title": "Selection",
+      "description": "Choose the domain, subdomain and one or more elements."
     },
     {
       "id": "behaviours",
