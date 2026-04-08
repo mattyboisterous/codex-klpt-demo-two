@@ -1,0 +1,13 @@
+{
+  "name": "codex-klpt-demo-two",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sass": "sass src/styles.scss dist/styles.css",
+    "sass:watch": "sass --watch src/styles.scss:dist/styles.css"
+  },
+  "devDependencies": {
+    "sass": "^1.86.3"
+  }
+}
+

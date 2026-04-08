@@ -1,0 +1,20 @@
+{
+  "avatars": [
+    {
+      "id": "5c6798fb-6a30-43ad-a57c-34722275011b",
+      "avatar": "/img/avatars/pink-pig.png"
+    },
+    {
+      "id": "83a48810-e33b-4331-bbc6-d4403eb55041",
+      "avatar": "/img/avatars/yellow-horse.png"
+    },
+    {
+      "id": "980b10c4-657c-461d-ad0d-8b04e5e6b480",
+      "avatar": "/img/avatars/red-dog.png"
+    },
+    {
+      "id": "e3477ee3-1df6-419a-baee-bb6603c8abcb",
+      "avatar": "/img/avatars/white-dolphin.png"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#6746d6">
+    <title>Domain Explorer</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="dist/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Child progress</p>
+        <h1 id="page-title">KLPT tool</h1>
+        <p class="intro">
+          Select a domain to zoom into its subdomains and elements. Use the progress tracker to move back up.
+        </p>
+      </section>
+
+      <section class="session-home" aria-label="Session home">
+        <button class="create-session-button" type="button">
+          <span aria-hidden="true"><i class="fa-solid fa-plus"></i></span>
+          <strong>Create new</strong>
+        </button>
+
+        <div class="resume-panel">
+          <div>
+            <p class="eyebrow">Saved sessions</p>
+            <h2>Resume a session</h2>
+          </div>
+          <div class="session-list"></div>
+        </div>
+
+        <button class="debug-storage-button" type="button" data-action="show-session-store">state</button>
+      </section>
+
+      <dialog class="storage-dialog" aria-labelledby="storage-dialog-title">
+        <div class="storage-dialog__heading">
+          <h2 id="storage-dialog-title">Stored sessions</h2>
+          <button class="icon-button" type="button" data-action="close-session-store" aria-label="Close stored sessions">×</button>
+        </div>
+        <pre class="storage-dialog__content"></pre>
+      </dialog>
+
+      <section class="avatar-picker" aria-label="Select an avatar" hidden>
+        <div class="panel-heading">
+          <button class="secondary-button" type="button" data-action="back-home">Back</button>
+          <div>
+            <p class="eyebrow">Create session</p>
+            <h2>Select an avatar</h2>
+          </div>
+        </div>
+        <div class="avatar-grid"></div>
+      </section>
+
+      <section class="explorer" aria-label="Domain explorer" hidden>
+        <div class="session-bar">
+          <button class="secondary-button" type="button" data-action="exit-session">Sessions</button>
+          <div class="active-session"></div>
+        </div>
+
+        <nav class="progress-nav" aria-label="Session progress">
+          <div class="progress-track"></div>
+        </nav>
+
+        <div class="stage" aria-live="polite">
+          <div class="orbit" data-state="ready"></div>
+          <section class="behaviour-screen" aria-label="Select a behaviour" hidden>
+            <article class="behaviour-detail" role="button" tabindex="0" aria-label="Select this behaviour and continue">
+              <h2></h2>
+              <div class="behaviour-detail__description"></div>
+              <span class="behaviour-detail__cta">Tap to select and continue</span>
+            </article>
+            <div class="behaviour-orbit"></div>
+          </section>
+          <section class="statement-screen form-page" aria-label="Learning progression statement" hidden></section>
+          <section class="review-screen form-page" aria-label="Review learning progression statement" hidden></section>
+          <article class="selection-card" hidden>
+            <p class="selection-card__label">Selected element</p>
+            <h2></h2>
+            <p>This item has no further levels to explore.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <template id="node-button-template">
+      <button class="node-button" type="button">
+        <span class="node-button__index"></span>
+        <span class="node-button__name"></span>
+        <span class="node-button__hint"></span>
+      </button>
+    </template>
+
+    <script src="src/app.js" defer></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        let updatePromptShown = false;
+        let refreshingForUpdate = false;
+
+        function promptForServiceWorkerUpdate(worker) {
+          if (updatePromptShown) {
+            return;
+          }
+
+          updatePromptShown = true;
+
+          if (window.confirm("A new version is available. Refresh now to update?")) {
+            worker.postMessage({ type: "SKIP_WAITING" });
+          }
+        }
+
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (refreshingForUpdate) {
+            return;
+          }
+
+          refreshingForUpdate = true;
+          window.location.reload();
+        });
+
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("service-worker.js").then((registration) => {
+            if (registration.waiting && navigator.serviceWorker.controller) {
+              promptForServiceWorkerUpdate(registration.waiting);
+            }
+
+            registration.addEventListener("updatefound", () => {
+              const newWorker = registration.installing;
+
+              newWorker?.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  promptForServiceWorkerUpdate(newWorker);
+                }
+              });
+            });
+
+            registration.update();
+            window.setInterval(() => registration.update(), 60 * 60 * 1000);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

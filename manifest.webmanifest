@@ -1,0 +1,17 @@
+{
+  "name": "Domain Explorer",
+  "short_name": "Domains",
+  "description": "A playful domain explorer with local session state.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#f9f7ff",
+  "theme_color": "#6746d6",
+  "icons": [
+    {
+      "src": "/img/avatars/pink-pig.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
