@@ -2,35 +2,35 @@
   "avatars": [
     {
       "id": "planet-mercury",
-      "avatar": "/img/avatars/mercury.png"
+      "avatar": "img/avatars/mercury.png"
     },
     {
       "id": "planet-venus",
-      "avatar": "/img/avatars/venus.png"
+      "avatar": "img/avatars/venus.png"
     },
     {
       "id": "planet-earth",
-      "avatar": "/img/avatars/earth.png"
+      "avatar": "img/avatars/earth.png"
     },
     {
       "id": "planet-mars",
-      "avatar": "/img/avatars/mars.png"
+      "avatar": "img/avatars/mars.png"
     },
     {
       "id": "planet-jupiter",
-      "avatar": "/img/avatars/jupiter.png"
+      "avatar": "img/avatars/jupiter.png"
     },
     {
       "id": "planet-saturn",
-      "avatar": "/img/avatars/saturn.png"
+      "avatar": "img/avatars/saturn.png"
     },
     {
       "id": "planet-uranus",
-      "avatar": "/img/avatars/uranus.png"
+      "avatar": "img/avatars/uranus.png"
     },
     {
       "id": "planet-neptune",
-      "avatar": "/img/avatars/neptune.png"
+      "avatar": "img/avatars/neptune.png"
     }
   ]
 }
