@@ -9,6 +9,10 @@ body {
   font-weight: 400;
   background: linear-gradient(135deg, #f2f6fa 0%, #e7eef5 48%, #dfe8f0 100%); }
 
+body[data-theme="dark"] {
+  color: #e8eef6;
+  background: linear-gradient(135deg, #071421 0%, #0d1f32 48%, #10263a 100%); }
+
 button {
   font: inherit; }
 
@@ -24,7 +28,8 @@ button {
 .hero {
   max-width: 720px;
   margin: 0 auto 28px;
-  text-align: center; }
+  text-align: center;
+  position: relative; }
   .hero h1 {
     display: inline-flex;
     gap: 14px;
@@ -38,6 +43,28 @@ button {
     width: clamp(52px, 7vw, 82px);
     height: auto;
     flex: 0 0 auto; }
+
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #0d3b66;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 10px 20px rgba(13, 37, 63, 0.1);
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease; }
+  .theme-toggle:hover, .theme-toggle:focus-visible {
+    transform: translateY(-1px);
+    background: #fff; }
+  .theme-toggle span {
+    font-size: 0.9rem;
+    font-weight: 700; }
 
 .eyebrow {
   margin: 0 0 12px;
@@ -53,6 +80,27 @@ button {
   color: #5e6f84;
   font-size: clamp(1rem, 2vw, 1.12rem);
   line-height: 1.7; }
+
+body[data-theme="dark"] .eyebrow {
+  color: #7db8ff; }
+
+body[data-theme="dark"] .intro,
+body[data-theme="dark"] .empty-copy,
+body[data-theme="dark"] .progress-step__description,
+body[data-theme="dark"] .storage-dialog__content,
+body[data-theme="dark"] .selection-row__heading p,
+body[data-theme="dark"] .selection-intro p:not(.eyebrow),
+body[data-theme="dark"] .behaviour-intro p:not(.eyebrow) {
+  color: #b3c4d8; }
+
+body[data-theme="dark"] .theme-toggle {
+  color: #f3f8ff;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.24); }
+
+body[data-theme="dark"] .theme-toggle:hover,
+body[data-theme="dark"] .theme-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.14); }
 
 .explorer {
   overflow: hidden;
@@ -79,6 +127,13 @@ button {
   gap: clamp(20px, 4vw, 48px);
   align-items: center;
   padding: clamp(24px, 5vw, 56px); }
+
+body[data-theme="dark"] .explorer,
+body[data-theme="dark"] .session-home,
+body[data-theme="dark"] .avatar-picker {
+  border-color: rgba(125, 184, 255, 0.14);
+  background: rgba(10, 23, 38, 0.82);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.26); }
 
 .debug-storage-button {
   position: absolute;
@@ -110,6 +165,11 @@ button {
     background: rgba(24, 35, 63, 0.28);
     backdrop-filter: blur(4px); }
 
+body[data-theme="dark"] .storage-dialog {
+  color: #e8eef6;
+  background: rgba(11, 24, 39, 0.96);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42); }
+
 .storage-dialog__heading {
   display: flex;
   gap: 18px;
@@ -132,6 +192,9 @@ button {
   font-size: 0.82rem;
   line-height: 1.5;
   white-space: pre-wrap; }
+
+body[data-theme="dark"] .storage-dialog__content {
+  border-top-color: rgba(125, 184, 255, 0.16); }
 
 .create-session-button {
   display: grid;
@@ -192,6 +255,34 @@ button {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: inset 0 0 0 1px rgba(13, 59, 102, 0.16); }
+
+body[data-theme="dark"] .session-card,
+body[data-theme="dark"] .avatar-option,
+body[data-theme="dark"] .selection-intro,
+body[data-theme="dark"] .behaviour-intro,
+body[data-theme="dark"] .statement-card,
+body[data-theme="dark"] .selection-row__empty,
+body[data-theme="dark"] .review-list div,
+body[data-theme="dark"] .summary-block,
+body[data-theme="dark"] .evidence-panel,
+body[data-theme="dark"] .review-text-block,
+body[data-theme="dark"] .progression-item {
+  color: #e8eef6;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(125, 184, 255, 0.12); }
+
+body[data-theme="dark"] .session-card__main,
+body[data-theme="dark"] .avatar-option,
+body[data-theme="dark"] .active-session,
+body[data-theme="dark"] .review-list dd,
+body[data-theme="dark"] .form-field span {
+  color: #e8eef6; }
+
+body[data-theme="dark"] .summary-block p,
+body[data-theme="dark"] .evidence-panel p,
+body[data-theme="dark"] .evidence-panel ul,
+body[data-theme="dark"] .review-text-block p {
+  color: #dbe7f3; }
 
 .session-card__main {
   display: flex;
@@ -305,6 +396,18 @@ button {
   .avatar-option:hover, .avatar-option:focus-visible {
     box-shadow: 0 14px 28px rgba(13, 59, 102, 0.16);
     transform: translateY(-2px); }
+
+body[data-theme="dark"] .secondary-button,
+body[data-theme="dark"] .icon-button,
+body[data-theme="dark"] .debug-storage-button {
+  color: #dce9f7;
+  background: rgba(125, 184, 255, 0.12); }
+
+body[data-theme="dark"] .secondary-button:hover,
+body[data-theme="dark"] .secondary-button:focus-visible,
+body[data-theme="dark"] .icon-button:hover,
+body[data-theme="dark"] .icon-button:focus-visible {
+  background: #1d4f82; }
 
 .session-bar {
   padding: 24px clamp(20px, 4vw, 40px) 0; }
@@ -434,6 +537,18 @@ button {
     margin: 0;
     color: #5e6f84;
     line-height: 1.55; }
+
+body[data-theme="dark"] .progress-track::before {
+  background: rgba(125, 184, 255, 0.14); }
+
+body[data-theme="dark"] .progress-step[data-state="pending"] .progress-step__node {
+  color: #b3c4d8;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 2px rgba(125, 184, 255, 0.12); }
+
+body[data-theme="dark"] .progress-step[data-state="complete"],
+body[data-theme="dark"] .progress-step[data-state="current"] {
+  color: #e8eef6; }
 
 .selection-row {
   display: grid;
@@ -818,6 +933,16 @@ button {
   .form-field input[type="date"]::-webkit-date-and-time-value {
     padding: 2px 0; }
 
+body[data-theme="dark"] .form-field input,
+body[data-theme="dark"] .form-field textarea {
+  border-color: rgba(125, 184, 255, 0.16);
+  color: #eef5fd;
+  background: rgba(255, 255, 255, 0.06); }
+
+body[data-theme="dark"] .form-field input::placeholder,
+body[data-theme="dark"] .form-field textarea::placeholder {
+  color: #9fb4ca; }
+
 .form-field--wide {
   grid-column: 1 / -1; }
 
@@ -978,6 +1103,10 @@ button {
   .behaviour-button {
     min-height: 118px;
     border-radius: 12px; } }
+body[data-theme="dark"] .primary-button {
+  background: #1d4f82;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24); }
+
 @media print {
   body {
     background: #fff; }

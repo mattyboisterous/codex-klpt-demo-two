@@ -2,12 +2,15 @@ const DOMAINS_URL = "data/domains.json";
 const AVATARS_URL = "data/avatars.json";
 const NAVIGATION_URL = "data/navigation.json";
 const STORE_KEY = "codexKlptDemoTwoState";
+const THEME_KEY = "codexKlptDemoTwoTheme";
 const SENSITIVE_FORM_FIELDS = new Set(["student-name"]);
 
+const pageRoot = document.body;
 const sessionHome = document.querySelector(".session-home");
 const avatarPicker = document.querySelector(".avatar-picker");
 const explorer = document.querySelector(".explorer");
 const createSessionButton = document.querySelector(".create-session-button");
+const themeToggle = document.querySelector("[data-action='toggle-theme']");
 const storageButton = document.querySelector("[data-action='show-session-store']");
 const storageDialog = document.querySelector(".storage-dialog");
 const storageDialogContent = document.querySelector(".storage-dialog__content");
@@ -31,6 +34,8 @@ let activeSessionId = null;
 let path = [];
 let activeElement = null;
 let activePage = "selection";
+
+applyTheme(loadThemePreference());
 
 async function init() {
   try {
@@ -76,6 +81,7 @@ async function init() {
 }
 
 function bindEvents() {
+  themeToggle.addEventListener("click", toggleTheme);
   createSessionButton.addEventListener("click", () => {
     renderAvatarPicker();
     showView("avatars");
@@ -99,6 +105,36 @@ function bindEvents() {
   storageDialog.querySelector("[data-action='close-session-store']").addEventListener("click", () => {
     storageDialog.close();
   });
+}
+
+function loadThemePreference() {
+  const stored = localStorage.getItem(THEME_KEY);
+
+  if (stored === "light" || stored === "dark") {
+    return stored;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  pageRoot.dataset.theme = theme;
+  themeToggle?.setAttribute("aria-pressed", String(theme === "dark"));
+  themeToggle?.setAttribute("aria-label", `Switch to ${theme === "dark" ? "light" : "dark"} mode`);
+
+  if (themeToggle) {
+    themeToggle.innerHTML = theme === "dark"
+      ? `<i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light mode</span>`
+      : `<i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark mode</span>`;
+  }
+
+  document.querySelector("meta[name='theme-color']")?.setAttribute("content", theme === "dark" ? "#081a2d" : "#0d3b66");
+}
+
+function toggleTheme() {
+  const nextTheme = pageRoot.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, nextTheme);
+  applyTheme(nextTheme);
 }
 
 function loadSessions() {
