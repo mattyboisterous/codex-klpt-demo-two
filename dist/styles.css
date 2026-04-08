@@ -5,8 +5,8 @@ body {
   min-height: 100vh;
   margin: 0;
   color: #10233c;
-  font-family: "Open Sans", "Segoe UI", sans-serif;
-  font-weight: 300;
+  font-family: "Lato", "Segoe UI", sans-serif;
+  font-weight: 400;
   background: linear-gradient(135deg, #f2f6fa 0%, #e7eef5 48%, #dfe8f0 100%); }
 
 button {
@@ -26,10 +26,18 @@ button {
   margin: 0 auto 28px;
   text-align: center; }
   .hero h1 {
+    display: inline-flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
     margin: 0;
     font-size: clamp(2.5rem, 6vw, 5.8rem);
     line-height: 0.92;
     letter-spacing: -0.08em; }
+  .hero img {
+    width: clamp(52px, 7vw, 82px);
+    height: auto;
+    flex: 0 0 auto; }
 
 .eyebrow {
   margin: 0 0 12px;
@@ -485,8 +493,7 @@ button {
     font-size: clamp(1.05rem, 2vw, 1.35rem);
     font-weight: 850;
     line-height: 1.08; }
-  .selection-panel small,
-  .selection-panel .selection-panel__index {
+  .selection-panel small {
     font-size: 0.72rem;
     font-weight: 850;
     letter-spacing: 0.12em;
@@ -534,6 +541,7 @@ button {
   transform-origin: center; }
 
 .behaviour-detail {
+  position: relative;
   display: grid;
   gap: 14px;
   min-height: 220px;
@@ -548,6 +556,20 @@ button {
     line-height: 1;
     letter-spacing: -0.04em;
     text-shadow: 0 1px 2px rgba(16, 35, 60, 0.28); }
+
+.behaviour-detail__bulb {
+  position: absolute;
+  top: -22px;
+  left: -14px;
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  filter: drop-shadow(0 0 12px rgba(255, 212, 90, 0.42)) drop-shadow(0 8px 12px rgba(16, 35, 60, 0.22));
+  transform: rotate(-8deg); }
+  .behaviour-detail__bulb img {
+    display: block;
+    width: 62px;
+    height: 62px; }
 
 .behaviour-detail__description {
   max-height: 260px;
@@ -618,7 +640,6 @@ button {
   color: #fff;
   background: linear-gradient(135deg, rgba(16, 35, 60, 0.08), rgba(16, 35, 60, 0.32)), linear-gradient(135deg, var(--accent-glow, var(--accent)), var(--accent));
   box-shadow: 0 12px 22px color-mix(in srgb, var(--accent) 16%, transparent), inset 0 0 0 1px color-mix(in srgb, #fff 18%, transparent); }
-  .behaviour-row__element span,
   .behaviour-row__element small {
     font-size: 0.72rem;
     font-weight: 850;
@@ -656,7 +677,7 @@ button {
 
 .behaviour-button {
   display: grid;
-  gap: 6px;
+  gap: 10px;
   align-content: center;
   min-height: 136px;
   padding: 16px;
@@ -669,11 +690,6 @@ button {
   cursor: pointer;
   scroll-snap-align: start;
   transition: filter 180ms ease, outline-color 180ms ease, transform 180ms ease; }
-  .behaviour-button span {
-    font-size: 0.68rem;
-    font-weight: 850;
-    letter-spacing: 0.14em;
-    opacity: 0.82; }
   .behaviour-button strong {
     font-size: clamp(0.8rem, 1.5vw, 0.96rem);
     line-height: 1.05; }
@@ -758,15 +774,6 @@ button {
   display: flex;
   gap: 12px;
   align-items: center; }
-  .progression-item__heading span {
-    display: grid;
-    min-width: 42px;
-    height: 42px;
-    place-items: center;
-    border-radius: 12px;
-    color: #fff;
-    font-weight: 850;
-    background: var(--accent); }
   .progression-item__heading h3 {
     margin: 0; }
 
@@ -799,6 +806,17 @@ button {
     box-shadow: none; }
   .form-field textarea {
     resize: vertical; }
+  .form-field input[type="date"] {
+    min-height: 54px;
+    padding: 13px 18px; }
+  .form-field input[type="date"]::-webkit-calendar-picker-indicator {
+    padding: 8px;
+    border-radius: 8px;
+    background-color: rgba(13, 59, 102, 0.08);
+    cursor: pointer; }
+  .form-field input[type="date"]::-webkit-datetime-edit,
+  .form-field input[type="date"]::-webkit-date-and-time-value {
+    padding: 2px 0; }
 
 .form-field--wide {
   grid-column: 1 / -1; }

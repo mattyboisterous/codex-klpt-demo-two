@@ -436,7 +436,6 @@ function createSelectionPanel(node, isSelected, allowMultiple, onSelect) {
   button.dataset.selected = String(isSelected);
   button.setAttribute("aria-pressed", String(isSelected));
   button.innerHTML = `
-    <span class="selection-panel__index">${String(node.index).padStart(2, "0")}</span>
     <strong>${escapeHtml(node.name)}</strong>
     <small>${panelHint(node, allowMultiple, isSelected)}</small>
   `;
@@ -645,7 +644,6 @@ function createBehaviourRow(elementNode, focusedElementId, focusedBehaviourId) {
 
   row.innerHTML = `
     <div class="behaviour-row__element">
-      <span>${String(elementNode.index).padStart(2, "0")}</span>
       <strong>${escapeHtml(elementNode.name)}</strong>
       <small>${isFocusedElement ? "Showing details" : "Selected element"}</small>
     </div>
@@ -716,7 +714,6 @@ function createBehaviourButton(elementNode, behaviour, index, total, isSelected,
   button.dataset.focused = String(isFocused);
   button.setAttribute("aria-pressed", String(isSelected));
   button.innerHTML = `
-    <span>${String(behaviour.index).padStart(2, "0")}</span>
     <strong>${behaviour.name}</strong>
   `;
   button.addEventListener("click", () => {
@@ -965,7 +962,6 @@ function progressionStackMarkup(items) {
       ${items.map((item) => `
         <article class="progression-item" style="--accent: ${item.element.color.accent}">
           <div class="progression-item__heading">
-            <span>${String(item.element.index).padStart(2, "0")}</span>
             <h3>${escapeHtml(item.element.name)}</h3>
           </div>
           <div class="evidence-grid">
